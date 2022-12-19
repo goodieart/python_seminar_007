@@ -24,7 +24,7 @@ def get_cursor():
     cursor = connection.cursor()
 
 
-def get_entries(table: str, number: int):
+def get_entries(number: int):
     cursor.execute(Q_GETDICT)
     result = cursor.fetchmany(number)
     return result
@@ -32,9 +32,8 @@ def get_entries(table: str, number: int):
 def find_entrie(fcs: str, create_on_fail:bool = True):
     global cursor
     buffer = [x.strip(' ') for x in fcs.split()]
-    print(buffer)
-    test = cursor.execute(Q_GETDICT + ' WHERE persons.second_name = (?) AND persons.first_name = (?) AND persons.patronymic = (?)', buffer)
-    return test
+    d = {'fn': buffer[0], 'sn': buffer[1], 'p': buffer[2]}
+    test = cursor.execute(Q_GETDICT + ' WHERE persons.second_name =:sn AND persons.first_name =:fn AND persons.patronymic =:p', d)
 
 def create_entrie():
     pass
@@ -45,12 +44,12 @@ def db_import(file: str, format: str = 'csv'):
         with open(file, 'r', encoding="utf-8") as fin:
             dr = csv.DictReader(fin)
             for i in dr:
-                test = (i['second_name'], i['first_name'],
+                buffer = (i['second_name'], i['first_name'],
                         i['patronymic'], i['phone'])
                 cursor.execute(
-                    "INSERT INTO persons (second_name, first_name, patronymic) VALUES (?, ?, ?);", test[:-1])
+                    "INSERT INTO persons (second_name, first_name, patronymic) VALUES (?, ?, ?);", buffer[:-1])
                 cursor.execute("INSERT INTO directory (person_id, phone) VALUES (?, ?);", (int(
-                    cursor.lastrowid), test[-1]))
+                    cursor.lastrowid), buffer[-1]))
                 connection.commit()
 
 
